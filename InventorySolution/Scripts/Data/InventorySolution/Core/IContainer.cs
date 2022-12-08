@@ -15,7 +15,11 @@ namespace RWS.Data.InventorySolution.Core
         int GetHeight();
         float GetMaxWeight();
         Vector2Int GetTileSize();
+        Vector2Int GetItemSize();
         RectTransform GetRect();
+        ICharacterContainerHandler GetOwner();
+        void SetOwner(GameObject owner);
+        EContainerCategory GetCategory();
 
         EContainerOp PlaceItem(IContainerItem item, int x, int y);
         EContainerOp PlaceItem(IContainerItem item, int x, int y, ref IContainerItem overlapItem);

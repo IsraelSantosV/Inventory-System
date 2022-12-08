@@ -191,10 +191,12 @@ namespace RWS.Data.InventorySolution
         private void RefreshSize(IContainer container)
         {
             Vector2Int tileSize = container.GetTileSize();
+            Vector2Int itemMaxSize = container.GetItemSize();
+
             Vector2 itemSize = new()
             {
-                x = GetData().Size.x * tileSize.x,
-                y = GetData().Size.y * tileSize.y
+                x = GetData().Size.x * Mathf.Min(tileSize.x, itemMaxSize.x),
+                y = GetData().Size.y * Mathf.Min(tileSize.y, itemMaxSize.y)
             };
 
             ItemRect.sizeDelta = itemSize;
@@ -209,7 +211,7 @@ namespace RWS.Data.InventorySolution
             };
         }
 
-        public void UseItem()
+        public void UseItem(ICharacterContainerHandler owner)
         {
             if(!GetData().Usable)
             {
@@ -217,6 +219,11 @@ namespace RWS.Data.InventorySolution
             }
 
             GetData().OnUse();
+
+            if(owner != null)
+            {
+                owner.OnUseItem(this);
+            }
         }
     }
 }

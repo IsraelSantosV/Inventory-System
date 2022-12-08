@@ -19,12 +19,17 @@ namespace RWS.Data.InventorySolution
 
         //================================================== FIELDS
 
-        [Header("CORE SETTINGS")]
+        [Header("DEFINITIONS")]
+        [SerializeField] private GameObject owner;
         [SerializeField] private EContainerMode containerMode = EContainerMode.FullControl;
+        [SerializeField] private EContainerCategory containerCategory = EContainerCategory.Common;
+
+        [Header("CORE SETTINGS")]
         [SerializeField] private bool randomGenerateId = false;
         [SerializeField] private string containerId;
         [SerializeField] private Vector2Int containerSize = new(10, 10);
         [SerializeField] private Vector2Int tileSize = new(32, 32);
+        [SerializeField] private Vector2Int itemSize = new(32, 32);
 
         [Header("WEIGHT FEATURE")]
         [SerializeField] private bool useWeightFeature;
@@ -39,6 +44,7 @@ namespace RWS.Data.InventorySolution
         [SerializeField] private bool createWithCustomSlot;
         [SerializeField] private GameObject customSlotPrefab;
         [SerializeField] private Image gridBackground;
+        [SerializeField] private Sprite filledSlotTexture;
 
         [Header("DEBUG SETTINGS")]
         [SerializeField] private bool drawDebug = true;
@@ -50,10 +56,13 @@ namespace RWS.Data.InventorySolution
         private IContainerItem[,] m_Container;
         private ContainerSaveData m_SaveData;
         private GridPermissions m_Permissions;
+        private ICharacterContainerHandler m_Owner;
+        private Image[,] m_CustomSlots;
 
         private Vector2 m_Size;
         private RectTransform m_Rect;
         private Canvas m_Canvas;
+        private Sprite m_DefaultSlotIcon;
 
         public event Action OnUpdateContainer;
 
@@ -61,7 +70,19 @@ namespace RWS.Data.InventorySolution
         public int GetWidth() => containerSize.x;
         public int GetHeight() => containerSize.y;
         public Vector2Int GetTileSize() => tileSize;
+        public Vector2Int GetItemSize() => itemSize;
         public float GetMaxWeight() => maxWeight;
+        public EContainerCategory GetCategory() => containerCategory;
+
+        public ICharacterContainerHandler GetOwner()
+        {
+            if(m_Owner == null && owner != null)
+            {
+                SetOwner(owner);
+            }
+
+            return m_Owner;
+        }
 
         public RectTransform GetRect()
         {
@@ -84,6 +105,18 @@ namespace RWS.Data.InventorySolution
             return containerId;
         }
 
+        public void SetOwner(GameObject targetOwner)
+        {
+            if (targetOwner != null)
+            {
+                owner = targetOwner;
+                if (owner.TryGetComponent(out m_Owner))
+                {
+                    m_Owner.AttachContainer(this, containerCategory);
+                }
+            }
+        }
+
         private void Awake()
         {
             if(!transform.root.TryGetComponent(out m_Canvas))
@@ -92,6 +125,7 @@ namespace RWS.Data.InventorySolution
                 return;
             }
 
+            SetOwner(owner);
             Init();
         }
 
@@ -107,6 +141,7 @@ namespace RWS.Data.InventorySolution
         {
             m_Size = new Vector2(GetWidth() * tileSize.x, GetHeight() * tileSize.y);
             m_Container = new IContainerItem[GetWidth(), GetHeight()];
+            m_CustomSlots = new Image[GetWidth(), GetHeight()];
             m_SaveData = new ContainerSaveData(this);
             m_Permissions = GetComponent<GridPermissions>();
 
@@ -153,9 +188,21 @@ namespace RWS.Data.InventorySolution
                 groupRect.offsetMax = Vector2.zero;
                 groupRect.offsetMin = Vector2.zero;
 
-                for(var i = 0; i < GetWidth() * GetHeight(); i++)
+                for (var y = 0; y < GetHeight(); y++)
                 {
-                    Instantiate(customSlotPrefab, gridGroup.transform, false);
+                    for (var x = 0; x < GetWidth(); x++)
+                    {
+                        GameObject customSlot = Instantiate(customSlotPrefab, gridGroup.transform, false);
+                        if (customSlot.TryGetComponent(out Image icon))
+                        {
+                            m_CustomSlots[x, y] = icon;
+
+                            if (m_DefaultSlotIcon == null)
+                            {
+                                m_DefaultSlotIcon = icon.sprite;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -214,6 +261,12 @@ namespace RWS.Data.InventorySolution
                 for (var posY = 0; posY < itemSize.y; posY++)
                 {
                     m_Container[x + posX, y + posY] = item;
+
+                    Image slotIcon = GetCustomSlotIcon(x + posX, y + posY);
+                    if (slotIcon != null)
+                    {
+                        slotIcon.sprite = filledSlotTexture;
+                    }
                 }
             }
 
@@ -601,6 +654,12 @@ namespace RWS.Data.InventorySolution
                 for (var posY = 0; posY < itemSize.y; posY++)
                 {
                     m_Container[gridPos.x + posX, gridPos.y + posY] = null;
+
+                    Image slotIcon = GetCustomSlotIcon(gridPos.x + posX, gridPos.y + posY);
+                    if(slotIcon != null)
+                    {
+                        slotIcon.sprite = m_DefaultSlotIcon;
+                    }
                 }
             }
         }
@@ -696,6 +755,16 @@ namespace RWS.Data.InventorySolution
             }
 
             return m_Container[x, y].GetAvailableStack();
+        }
+
+        private Image GetCustomSlotIcon(int x, int y)
+        {
+            if(!createWithCustomSlot || customSlotPrefab == null || filledSlotTexture == null)
+            {
+                return null;
+            }
+
+            return m_CustomSlots[x, y];
         }
 
         private void OnDrawGizmosSelected()

@@ -10,6 +10,7 @@ namespace RWS.Data.InventorySolution
     public class ContainerController : MonoBehaviour
     {
         [SerializeField] private Transform canvasTransform;
+        [SerializeField] private ICharacterContainerHandler mainPlayer;
 
         [Header("INPUT SETTINGS")]
         [SerializeField] private KeyCode rotateKey = KeyCode.R;
@@ -81,7 +82,7 @@ namespace RWS.Data.InventorySolution
                 OnTriggerMainFunction();
             }
 
-            if(Input.GetMouseButtonDown(1))
+            if (Input.GetMouseButtonDown(1))
             {
                 OnTriggerSecondaryFunction();
             }
@@ -91,13 +92,18 @@ namespace RWS.Data.InventorySolution
                 RotateItem();
             }
 
+            HandleDebug();
+        }
+
+        private void HandleDebug()
+        {
             if (enableDebug)
             {
                 if (Input.GetKeyDown(addItemKey))
                 {
                     ItemData randomItem = GetRandomItem();
                     EContainerOp addResult = m_SelectedContainer.AddItem(randomItem, 1);
-                    if(addResult == EContainerOp.ContainerIsFull)
+                    if (addResult == EContainerOp.ContainerIsFull)
                     {
                         Debug.Log("Out of space!");
                     }
@@ -108,7 +114,7 @@ namespace RWS.Data.InventorySolution
                     Debug_CreateRandomItem();
                 }
 
-                if(Input.GetKeyDown(removeRandomKey))
+                if (Input.GetKeyDown(removeRandomKey))
                 {
                     Debug_RemoveRandomItem();
                 }
@@ -332,7 +338,7 @@ namespace RWS.Data.InventorySolution
             if(removeOp == EContainerOp.Success && removedAmount == 1)
             {
                 OpenTooltip(targetUseItem);
-                targetUseItem.UseItem();
+                targetUseItem.UseItem(m_SelectedContainer.GetOwner());
             }
         }
 

@@ -25,6 +25,6 @@ namespace RWS.Data.InventorySolution.Core
         void PutItem(ItemData item, IContainer fromContainer);
         void RefreshAmount();
         void Rotate();
-        void UseItem();
+        void UseItem(ICharacterContainerHandler owner);
     }
 }
