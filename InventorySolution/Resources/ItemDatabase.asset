@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a0566219755a8d44abd37efd4a7a2ad, type: 3}
+  m_Name: ItemDatabase
+  m_EditorClassIdentifier: 
+  resourcesPath: Assets/2D Shooter/Resources
+  copyToPassData: 0
+  itemContainerPrefab: {fileID: 2299036945903912368, guid: c24127f5748272746b5aad82640c4fc8,
+    type: 3}
+  items:
+  - {fileID: 11400000, guid: 75e55dd11ba26e24e967642d9178a9ca, type: 2}
+  - {fileID: 11400000, guid: 715cffb8c3c8dd048b4e12ca6391e59a, type: 2}
+  - {fileID: 11400000, guid: b004fb256abc8974b85b7429992e4287, type: 2}
+  raritiesProbability:
+  - 100
+  ignoreTypeList: 
+  ignoreSingleItems: []

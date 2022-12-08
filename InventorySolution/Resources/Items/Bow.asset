@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 274779f0440174f478044a0d08a7527d, type: 3}
+  m_Name: Bow
+  m_EditorClassIdentifier: 
+  id: 8475b454-3f41-4648-8134-0d38732e9ad6
+  itemName: Bow
+  icon: {fileID: 21300000, guid: 1844a36bc48abb94e817d1a0fa0adfc4, type: 3}
+  texture: {fileID: 21300000, guid: 1844a36bc48abb94e817d1a0fa0adfc4, type: 3}
+  weight: 2
+  size: {x: 3, y: 2}
+  maxStack: 1
+  category: 1
+  rarity: 0
