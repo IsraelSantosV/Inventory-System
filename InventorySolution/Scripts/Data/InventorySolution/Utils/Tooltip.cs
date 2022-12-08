@@ -139,6 +139,7 @@ namespace RWS.Data.InventorySolution.Utils
 
         public static void Show(string tooltipText)
         {
+            Instance.transform.SetAsLastSibling();
             Instance.gameObject.SetActive(true);
             Instance.SetText(tooltipText);
         }

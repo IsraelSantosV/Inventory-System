@@ -20,6 +20,10 @@ namespace RWS.Data.InventorySolution.Core
         ICharacterContainerHandler GetOwner();
         void SetOwner(GameObject owner);
         EContainerCategory GetCategory();
+        EShowingContainerMode GetShowingMode();
+        void SetTitle(string title);
+
+        void InitFromData(InsiderContainerItemData data);
 
         EContainerOp PlaceItem(IContainerItem item, int x, int y);
         EContainerOp PlaceItem(IContainerItem item, int x, int y, ref IContainerItem overlapItem);
@@ -42,6 +46,7 @@ namespace RWS.Data.InventorySolution.Core
         bool OverlapChecking(int x, int y, Vector2Int itemSize, ref IContainerItem overlapItem);
         bool HasAvailableWeight(ItemData item);
         bool HasPermissionToPlace(IContainerItem item);
+        void ClearContainer();
 
         void Save();
         void Load();
@@ -66,6 +71,12 @@ namespace RWS.Data.InventorySolution.Core
         WeightExcedeed,
         DontHavePermission,
         ContainerIsFull
+    }
+
+    public enum EShowingContainerMode
+    {
+        Always,
+        Closable
     }
 
     [Serializable]

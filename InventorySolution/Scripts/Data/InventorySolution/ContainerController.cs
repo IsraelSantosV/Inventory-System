@@ -9,6 +9,20 @@ namespace RWS.Data.InventorySolution
 {
     public class ContainerController : MonoBehaviour
     {
+        private static ContainerController m_Instance;
+        public static ContainerController Instance
+        {
+            get
+            {
+                if(m_Instance == null)
+                {
+                    m_Instance = FindObjectOfType<ContainerController>();
+                }
+
+                return m_Instance;
+            }
+        }
+
         [SerializeField] private Transform canvasTransform;
         [SerializeField] private ICharacterContainerHandler mainPlayer;
 
@@ -33,6 +47,11 @@ namespace RWS.Data.InventorySolution
         private ContainerHighlight m_Highlight;
         private Vector2 m_LastHighlightPos;
 
+        public Transform GetCanvasTransform()
+        {
+            return canvasTransform;
+        }
+
         private void Awake()
         {
             m_Highlight = GetComponent<ContainerHighlight>();
@@ -49,12 +68,41 @@ namespace RWS.Data.InventorySolution
             {
                 if(m_SelectedItem.GetContainer() != container && container != null)
                 {
-                    container.GetRect().SetAsFirstSibling();
+                    if(container.GetShowingMode() != EShowingContainerMode.Closable)
+                    {
+                        container.GetRect().SetAsFirstSibling();
+                    }
                 }
             }
 
             m_SelectedContainer = container;
             m_Highlight.AttachToContainer(m_SelectedContainer);
+        }
+
+        public void ShowContainer(IContainer container)
+        {
+            if(container is MonoBehaviour behaviour)
+            {
+                behaviour.gameObject.SetActive(true);
+                behaviour.transform.SetParent(canvasTransform);
+                behaviour.transform.SetAsLastSibling();
+            }
+        }
+
+        public void HideContainer(IContainer container)
+        {
+            if (container is MonoBehaviour behaviour)
+            {
+                if(container.GetShowingMode() == EShowingContainerMode.Closable)
+                {
+                    behaviour.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        public bool CanDragContainer(IContainer container)
+        {
+            return m_SelectedItem == null;
         }
 
         private ItemData GetRandomItem()
@@ -65,6 +113,11 @@ namespace RWS.Data.InventorySolution
 
         private void Update()
         {
+            if(ContainerDragWindow.IsDragging)
+            {
+                return;
+            }
+
             ItemDrag();
             HandleTooltip();
 
@@ -123,7 +176,7 @@ namespace RWS.Data.InventorySolution
 
         private void RotateItem()
         {
-            if(m_SelectedItem == null)
+            if(m_SelectedItem == null || m_SelectedItem.GetData().Size == Vector2Int.one)
             {
                 return;
             }
@@ -201,6 +254,12 @@ namespace RWS.Data.InventorySolution
                 }
 
                 if(!m_SelectedContainer.HasPermissionToPlace(m_SelectedItem))
+                {
+                    m_Highlight.Hide(true);
+                    return;
+                }
+
+                if (!ValidateItemInsiderContainer(tileGridPos))
                 {
                     m_Highlight.Hide(true);
                     return;
@@ -327,6 +386,12 @@ namespace RWS.Data.InventorySolution
 
             Vector2Int tileGridPos = GetTileGridPosition();
             IContainerItem targetUseItem = m_SelectedContainer.GetItem(tileGridPos.x, tileGridPos.y);
+            if(targetUseItem != null && targetUseItem.GetData() is InsiderContainerItemData)
+            {
+                targetUseItem.UseInsiderContainer(m_SelectedContainer.GetOwner());
+                return;
+            }
+
             if (targetUseItem == null || !targetUseItem.GetData().Usable)
             {
                 return;
@@ -359,6 +424,11 @@ namespace RWS.Data.InventorySolution
 
         private void PlaceItem(Vector2Int tileGridPos)
         {
+            if (!ValidateItemInsiderContainer(tileGridPos))
+            {
+                return;
+            }
+
             EContainerOp placeOperation = m_SelectedContainer.PlaceItem(m_SelectedItem, tileGridPos.x,
                 tileGridPos.y, ref m_OverlapItem);
 
@@ -376,6 +446,7 @@ namespace RWS.Data.InventorySolution
                     m_SelectedItem = m_OverlapItem;
                     m_OverlapItem = null;
                     m_SelectedRect = m_SelectedItem.GetRect();
+                    m_SelectedRect.SetParent(canvasTransform);
                     m_SelectedRect.SetAsLastSibling();
                 }
             }
@@ -383,23 +454,29 @@ namespace RWS.Data.InventorySolution
 
         private void PickUpItem(Vector2Int tileGridPos)
         {
+            if (!ValidateItemInsiderContainer(tileGridPos))
+            {
+                return;
+            }
+
             m_SelectedItem = m_SelectedContainer.PickUpItem(tileGridPos.x, tileGridPos.y);
             if (m_SelectedItem != null)
             {
                 m_SelectedRect = m_SelectedItem.GetRect();
+                m_SelectedRect.SetParent(canvasTransform);
                 m_SelectedRect.SetAsLastSibling();
             }
         }
 
         private void PickUpSplittedItem(Vector2Int tileGridPos)
         {
-            IContainerItem peekItem = m_SelectedContainer.GetItem(tileGridPos.x, tileGridPos.y);
-            if(peekItem == null)
+            if(!ValidateItemInsiderContainer(tileGridPos))
             {
                 return;
             }
 
-            if(peekItem.GetAmount() == 1)
+            IContainerItem peekItem = m_SelectedContainer.GetItem(tileGridPos.x, tileGridPos.y);
+            if (peekItem.GetAmount() == 1)
             {
                 PickUpItem(tileGridPos);
                 return;
@@ -414,7 +491,24 @@ namespace RWS.Data.InventorySolution
 
             m_SelectedItem = splitItem;
             m_SelectedRect = splitItem.GetRect();
+            m_SelectedRect.SetParent(canvasTransform);
             m_SelectedRect.SetAsLastSibling();
+        }
+
+        private bool ValidateItemInsiderContainer(Vector2Int tileGridPos)
+        {
+            if(m_SelectedContainer == null)
+            {
+                return false;
+            }
+
+            IContainerItem peekItem = m_SelectedContainer.GetItem(tileGridPos.x, tileGridPos.y);
+            if (peekItem != null && peekItem.IsShowingInsiderContainer())
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private void Debug_CreateRandomItem()

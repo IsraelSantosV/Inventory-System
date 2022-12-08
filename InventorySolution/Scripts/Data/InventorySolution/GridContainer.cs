@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,8 +24,10 @@ namespace RWS.Data.InventorySolution
         [SerializeField] private GameObject owner;
         [SerializeField] private EContainerMode containerMode = EContainerMode.FullControl;
         [SerializeField] private EContainerCategory containerCategory = EContainerCategory.Common;
+        [SerializeField] private EShowingContainerMode showingMode = EShowingContainerMode.Always;
 
         [Header("CORE SETTINGS")]
+        [SerializeField] private bool autoInit = true;
         [SerializeField] private bool randomGenerateId = false;
         [SerializeField] private string containerId;
         [SerializeField] private Vector2Int containerSize = new(10, 10);
@@ -41,10 +44,12 @@ namespace RWS.Data.InventorySolution
         [SerializeField] private bool loadOnStart;
 
         [Header("VISUAL SETTINGS")]
+        [SerializeField] private string title = "Container";
         [SerializeField] private bool createWithCustomSlot;
         [SerializeField] private GameObject customSlotPrefab;
         [SerializeField] private Image gridBackground;
         [SerializeField] private Sprite filledSlotTexture;
+        [SerializeField] private TMP_Text containerTitle;
 
         [Header("DEBUG SETTINGS")]
         [SerializeField] private bool drawDebug = true;
@@ -61,7 +66,7 @@ namespace RWS.Data.InventorySolution
 
         private Vector2 m_Size;
         private RectTransform m_Rect;
-        private Canvas m_Canvas;
+        private Transform m_Canvas;
         private Sprite m_DefaultSlotIcon;
 
         public event Action OnUpdateContainer;
@@ -73,6 +78,7 @@ namespace RWS.Data.InventorySolution
         public Vector2Int GetItemSize() => itemSize;
         public float GetMaxWeight() => maxWeight;
         public EContainerCategory GetCategory() => containerCategory;
+        public EShowingContainerMode GetShowingMode() => showingMode;
 
         public ICharacterContainerHandler GetOwner()
         {
@@ -99,7 +105,7 @@ namespace RWS.Data.InventorySolution
         {
             if(randomGenerateId && string.IsNullOrEmpty(containerId))
             {
-                containerId = System.Guid.NewGuid().ToString();
+                containerId = Guid.NewGuid().ToString();
             }
 
             return containerId;
@@ -117,16 +123,34 @@ namespace RWS.Data.InventorySolution
             }
         }
 
+        public void SetTitle(string text)
+        {
+            if(containerTitle != null)
+            {
+                containerTitle.text = text;
+            }
+
+            title = text;
+        }
+
         private void Awake()
         {
-            if(!transform.root.TryGetComponent(out m_Canvas))
+            if(m_Canvas == null)
             {
-                Debug.Log("Don't found canvas for the " + transform.name);
-                return;
+                m_Canvas = ContainerController.Instance.GetCanvasTransform();
+                if(m_Canvas == null)
+                {
+                    Debug.Log("Don't found canvas for the " + transform.name);
+                    return;
+                }
             }
 
             SetOwner(owner);
-            Init();
+
+            if(autoInit)
+            {
+                Init();
+            }
         }
 
         private void OnApplicationQuit()
@@ -137,6 +161,24 @@ namespace RWS.Data.InventorySolution
             }
         }
 
+        public void InitFromData(InsiderContainerItemData data)
+        {
+            if(data == null)
+            {
+                return;
+            }
+
+            containerSize = data.ContainerSize;
+            containerMode = data.ContainerMode;
+            containerCategory = data.ContainerCategory;
+            useWeightFeature = data.UseWeightFeature;
+            maxWeight = data.MaxWeight;
+            exceedPermitedWeight = data.ExceedPermitedWeight;
+
+            title = data.ItemName;
+            Init();
+        }
+
         private void Init()
         {
             m_Size = new Vector2(GetWidth() * tileSize.x, GetHeight() * tileSize.y);
@@ -145,7 +187,9 @@ namespace RWS.Data.InventorySolution
             m_SaveData = new ContainerSaveData(this);
             m_Permissions = GetComponent<GridPermissions>();
 
-            if(gridBackground == null)
+            SetTitle(title);
+
+            if (gridBackground == null)
             {
                 gridBackground = GetComponent<Image>();
             }
@@ -302,7 +346,7 @@ namespace RWS.Data.InventorySolution
                 return AddAmountInPosition(existentItem, amount);
             }
 
-            IContainerItem newItem = ItemDatabase.Instance.CreateContainerItem(item, this, m_Canvas.transform);
+            IContainerItem newItem = ItemDatabase.Instance.CreateContainerItem(item, this, m_Canvas);
             return PlaceItem(newItem, availablePos.Value.x, availablePos.Value.y);
         }
 
@@ -362,8 +406,10 @@ namespace RWS.Data.InventorySolution
                 return null;
             }
 
+            item.DestroyInsideContainer();
+
             CollectItem collectable = item.GetCollectable();
-            CleanGridReference(item);
+            CleanGridReference(item, true);
             if(item is MonoBehaviour behaviour)
             {
                 Destroy(behaviour.gameObject);
@@ -564,6 +610,17 @@ namespace RWS.Data.InventorySolution
             return m_Permissions.ValidatePermissions(item);
         }
 
+        public void ClearContainer()
+        {
+            GetAllItems().ForEach(item =>
+            {
+                Vector2Int gridPos = item.GetGridPosition();
+                RemoveFromSlot(gridPos.x, gridPos.y, item.GetAmount());
+            });
+
+            OnUpdateContainer?.Invoke();
+        }
+
         public void Save()
         {
             m_SaveData.SaveData(GetAllItems());
@@ -580,7 +637,7 @@ namespace RWS.Data.InventorySolution
                     ItemDatabase database = ItemDatabase.Instance;
                     ItemData itemData = database.GetItem(data.Id);
 
-                    IContainerItem item = database.CreateContainerItem(itemData, this, m_Canvas.transform);
+                    IContainerItem item = database.CreateContainerItem(itemData, this, m_Canvas);
                     item.SetAmount(data.Amount);
                     if(!data.InHorizontal)
                     {
@@ -644,7 +701,7 @@ namespace RWS.Data.InventorySolution
             return EContainerOp.Success;
         }
 
-        private void CleanGridReference(IContainerItem item)
+        private void CleanGridReference(IContainerItem item, bool safeClean = false)
         {
             Vector2Int itemSize = item.GetSize();
             Vector2Int gridPos = item.GetGridPosition();
@@ -653,6 +710,11 @@ namespace RWS.Data.InventorySolution
             {
                 for (var posY = 0; posY < itemSize.y; posY++)
                 {
+                    if(safeClean && GetItem(gridPos.x + posX, gridPos.y + posY) != null)
+                    {
+                        continue;
+                    }
+
                     m_Container[gridPos.x + posX, gridPos.y + posY] = null;
 
                     Image slotIcon = GetCustomSlotIcon(gridPos.x + posX, gridPos.y + posY);
@@ -662,28 +724,6 @@ namespace RWS.Data.InventorySolution
                     }
                 }
             }
-        }
-
-        private void ClearContainer()
-        {
-            for(var x = 0; x < GetWidth(); x++)
-            {
-                for (var y = 0; y < GetHeight(); y++)
-                {
-                    IContainerItem item = GetItem(x, y);
-                    if (item != null)
-                    {
-                        CleanGridReference(item);
-                        if (item is MonoBehaviour behaviour)
-                        {
-                            Destroy(behaviour.gameObject);
-                        }
-                    }
-                    
-                }
-            }
-
-            OnUpdateContainer?.Invoke();
         }
 
         private IContainerItem PlaceSameItemInPosition(IContainerItem source, IContainerItem destination)

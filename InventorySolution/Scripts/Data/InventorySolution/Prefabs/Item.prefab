@@ -90,6 +90,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe5fd5ebccd20504ca7f2fcaa2ba2e61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inverseRotation: {fileID: 1780856429649045376}
 --- !u!1 &3386768345117512744
 GameObject:
   m_ObjectHideFlags: 0

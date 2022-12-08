@@ -16,15 +16,19 @@ namespace RWS.Data.InventorySolution.Core
         IContainer GetContainer();
         CollectItem GetCollectable();
         float GetWeight();
+        IContainer GetInsiderContainer();
+        bool IsShowingInsiderContainer();
 
         void SetGridPosition(Vector2Int position);
         void SetAmount(int amount);
         void SetContainer(IContainer container);
         void SetPreviewContainer(IContainer preview);
+        void DestroyInsideContainer();
 
         void PutItem(ItemData item, IContainer fromContainer);
         void RefreshAmount();
         void Rotate();
         void UseItem(ICharacterContainerHandler owner);
+        void UseInsiderContainer(ICharacterContainerHandler owner);
     }
 }

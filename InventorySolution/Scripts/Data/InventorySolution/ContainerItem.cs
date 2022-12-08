@@ -5,12 +5,15 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEditor.Progress;
 
 namespace RWS.Data.InventorySolution
 {
     public class ContainerItem : MonoBehaviour, IContainerItem
     {
         private const float ROTATE_ANGLE = 90;
+
+        [SerializeField] private RectTransform inverseRotation;
 
         private ItemData m_Item;
         private int m_Amount;
@@ -71,6 +74,17 @@ namespace RWS.Data.InventorySolution
             }
         }
 
+        private IContainer m_InsiderContainer;
+        public IContainer GetInsiderContainer()
+        {
+            if (m_InsiderContainer == null)
+            {
+                m_InsiderContainer = GetComponentInChildren<IContainer>();
+            }
+
+            return m_InsiderContainer;
+        }
+
         public RectTransform GetRect()
         {
             return ItemRect;
@@ -118,20 +132,39 @@ namespace RWS.Data.InventorySolution
 
         public float GetWeight()
         {
-            return GetData().Weight * GetAmount();
+            float totalWeight = 0;
+            IContainer insiderContainer = GetInsiderContainer();
+            if(insiderContainer != null)
+            {
+                totalWeight += insiderContainer.GetContainerWeight();
+            }
+
+            return totalWeight + (GetData().Weight * GetAmount());
         }
 
         private void Awake()
         {
             GetComponentsInChildren<Image>().ToList().ForEach(image =>
             {
-                image.raycastTarget = false;
+                if(image.GetComponent<Button>() == null)
+                {
+                    image.raycastTarget = false;
+                }
             });
 
             GetComponentsInChildren<TMP_Text>().ToList().ForEach(text =>
             {
                 text.raycastTarget = false;
             });
+        }
+
+        private void Start()
+        {
+            IContainer insiderContainer = GetInsiderContainer();
+            if (insiderContainer != null)
+            {
+                ContainerController.Instance.HideContainer(insiderContainer);
+            }
         }
 
         public void PutItem(ItemData item, IContainer fromContainer)
@@ -178,13 +211,19 @@ namespace RWS.Data.InventorySolution
 
             float angle = m_InHorizontal ? 0 : ROTATE_ANGLE;
             ItemRect.rotation = Quaternion.Euler(0, 0, angle);
+
+            if(inverseRotation != null)
+            {
+                inverseRotation.rotation = Quaternion.Euler(Vector3.zero);
+            }
         }
 
         public void RefreshAmount()
         {
             if (AmountText != null)
             {
-                AmountText.text = m_Amount.ToString();
+                string amountText = GetAmount() == 1 ? "" : GetAmount().ToString();
+                AmountText.text = amountText;
             }
         }
 
@@ -202,6 +241,21 @@ namespace RWS.Data.InventorySolution
             ItemRect.sizeDelta = itemSize;
         }
 
+
+        public void DestroyInsideContainer()
+        {
+            if (GetInsiderContainer() != null)
+            {
+                IContainer insideContainer = GetInsiderContainer();
+                insideContainer.ClearContainer();
+
+                if (insideContainer is MonoBehaviour containerBehaviour)
+                {
+                    Destroy(containerBehaviour.gameObject);
+                }
+            }
+        }
+
         public CollectItem GetCollectable()
         {
             return new()
@@ -213,7 +267,7 @@ namespace RWS.Data.InventorySolution
 
         public void UseItem(ICharacterContainerHandler owner)
         {
-            if(!GetData().Usable)
+            if (!GetData().Usable)
             {
                 return;
             }
@@ -224,6 +278,41 @@ namespace RWS.Data.InventorySolution
             {
                 owner.OnUseItem(this);
             }
+        }
+
+        public void UseInsiderContainer(ICharacterContainerHandler owner)
+        {
+            bool enabled = false;
+            IContainer insiderContainer = GetInsiderContainer();
+            if (insiderContainer is MonoBehaviour behaviour)
+            {
+                enabled = behaviour.gameObject.activeInHierarchy;
+            }
+
+            if (enabled)
+            {
+                ContainerController.Instance.HideContainer(insiderContainer);
+            }
+            else
+            {
+                ContainerController.Instance.ShowContainer(insiderContainer);
+            }
+        }
+
+        public bool IsShowingInsiderContainer()
+        {
+            IContainer insiderContainer = GetInsiderContainer();
+            if(insiderContainer == null)
+            {
+                return false;
+            }
+
+            if(insiderContainer is MonoBehaviour behaviour)
+            {
+                return behaviour.gameObject.activeInHierarchy;
+            }
+
+            return false;
         }
     }
 }

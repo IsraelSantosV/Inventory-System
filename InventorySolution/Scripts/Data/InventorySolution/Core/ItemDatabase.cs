@@ -16,6 +16,7 @@ namespace RWS.Data.InventorySolution.Core
         [SerializeField] private string resourcesPath = "Assets/Database";
         [SerializeField] private bool copyToPassData = false;
         [SerializeField] private ContainerItem itemContainerPrefab;
+        [SerializeField] private ContainerItem itemInsiderContainerPrefab;
         [SerializeField] private List<ItemData> items = new();
 
         [Header("STATISTICS")]
@@ -119,13 +120,24 @@ namespace RWS.Data.InventorySolution.Core
 
         public IContainerItem CreateContainerItem(ItemData fromData, IContainer container, Transform canvasTransform = null)
         {
-            IContainerItem newItem = Instantiate(itemContainerPrefab);
-            newItem.PutItem(fromData, container);
-            newItem.SetAmount(1);
+            ContainerItem prefab = fromData is InsiderContainerItemData
+                ? itemInsiderContainerPrefab 
+                : itemContainerPrefab;
+
+            IContainerItem newItem = Instantiate(prefab);
+
+            if(fromData is InsiderContainerItemData insiderData)
+            {
+                IContainer insideContainer = newItem.GetInsiderContainer();
+                insideContainer.InitFromData(insiderData);
+            }
 
             Transform canvasT = canvasTransform == null ? GetCanvasTransform() : canvasTransform;
             newItem.GetRect().SetParent(canvasT, false);
             newItem.GetRect().SetAsLastSibling();
+
+            newItem.PutItem(fromData, container);
+            newItem.SetAmount(1);
             return newItem;
         }
 

@@ -12,11 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a0566219755a8d44abd37efd4a7a2ad, type: 3}
   m_Name: ItemDatabase
   m_EditorClassIdentifier: 
-  resourcesPath: Assets/2D Shooter/Resources
+  resourcesPath: Assets/RWS/Resources
   copyToPassData: 0
   itemContainerPrefab: {fileID: 2299036945903912368, guid: c24127f5748272746b5aad82640c4fc8,
     type: 3}
+  itemInsiderContainerPrefab: {fileID: 2299036945903912368, guid: 86a9c7d2be7e85a488d0d8070073740a,
+    type: 3}
   items:
+  - {fileID: 11400000, guid: 14b100a4ec6ee8b4d8df90bcf7da8245, type: 2}
   - {fileID: 11400000, guid: 75e55dd11ba26e24e967642d9178a9ca, type: 2}
   - {fileID: 11400000, guid: 715cffb8c3c8dd048b4e12ca6391e59a, type: 2}
   - {fileID: 11400000, guid: b004fb256abc8974b85b7429992e4287, type: 2}
