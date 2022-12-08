@@ -393,13 +393,13 @@ namespace RWS.Data.InventorySolution
 
             if (item.GetAmount() <= 0)
             {
-                DropItem(item);
+                DropItem(item, false);
             }
 
             return (EContainerOp.Success, finalAmount);
         }
 
-        public CollectItem DropItem(IContainerItem item)
+        public CollectItem DropItem(IContainerItem item, bool safeClear)
         {
             if(item == null)
             {
@@ -409,7 +409,7 @@ namespace RWS.Data.InventorySolution
             item.DestroyInsideContainer();
 
             CollectItem collectable = item.GetCollectable();
-            CleanGridReference(item, true);
+            CleanGridReference(item, safeClear);
             if(item is MonoBehaviour behaviour)
             {
                 Destroy(behaviour.gameObject);

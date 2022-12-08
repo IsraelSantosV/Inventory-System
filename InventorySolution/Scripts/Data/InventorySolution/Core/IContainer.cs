@@ -31,7 +31,7 @@ namespace RWS.Data.InventorySolution.Core
         EContainerOp AddItem(ItemData item, int amount);
         EContainerOp RemoveItem(ItemData item, int amount);
         (EContainerOp, int) RemoveFromSlot(int x, int y, int amount);
-        CollectItem DropItem(IContainerItem item);
+        CollectItem DropItem(IContainerItem item, bool safeClear);
         
         Vector2Int GetTileGridPosition(Vector2 worldPosition);
         Vector2 CalculatePositionOnGrid(int x, int y, Vector2Int itemSize);

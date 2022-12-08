@@ -193,7 +193,7 @@ namespace RWS.Data.InventorySolution
 
             if(m_SelectedItem.GetContainer() != null)
             {
-                CollectItem dropItem = m_SelectedItem.GetContainer().DropItem(m_SelectedItem);
+                CollectItem dropItem = m_SelectedItem.GetContainer().DropItem(m_SelectedItem, true);
 
                 m_SelectedItem = null;
                 m_SelectedRect = null;
